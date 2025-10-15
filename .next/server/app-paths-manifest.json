@@ -4,5 +4,6 @@
   "/page": "app/page.js",
   "/notes/create/page": "app/notes/create/page.js",
   "/notes/[id]/page": "app/notes/[id]/page.js",
+  "/notes/action/create/page": "app/notes/action/create/page.js",
   "/notes/filter/[...slug]/page": "app/notes/filter/[...slug]/page.js"
 }

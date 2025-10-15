@@ -1,11 +1,11 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { useState, useCallback, useEffect } from 'react';
-import { Note, CreateNoteData } from '@/types/note';
+import Link from 'next/link';
+import { Note } from '@/types/note';
 import NoteCard from '@/components/NoteCard/NoteCard';
-import NoteForm from '@/components/NoteForm/NoteForm';
 import css from './Notes.module.css';
 
 interface NotesClientProps {
@@ -62,28 +62,10 @@ function Pagination({ currentPage, totalPages, onPageChange }: {
   );
 }
 
-// Простий Modal компонент
-function Modal({ children, isOpen }: {
-  children: React.ReactNode;
-  isOpen: boolean;
-}) {
-  if (!isOpen) return null;
-
-  return (
-    <div className={css.modalOverlay}>
-      <div className={css.modal}>
-        {children}
-      </div>
-    </div>
-  );
-}
-
 export default function NotesClient({ tag }: NotesClientProps) {
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const queryClient = useQueryClient();
 
   // Debounce для пошуку
   useEffect(() => {
@@ -109,20 +91,6 @@ export default function NotesClient({ tag }: NotesClientProps) {
     refetchOnMount: true,
   });
 
-  // Mutation для створення нотатки
-  const createNoteMutation = useMutation({
-    mutationFn: async (noteData: CreateNoteData) => {
-      const response = await axios.post('/api/notes', noteData);
-      return response.data;
-    },
-    onSuccess: () => {
-      // Закриваємо модальне вікно
-      setIsModalOpen(false);
-      // Інвалідуємо запит нотаток для оновлення списку
-      queryClient.invalidateQueries({ queryKey: ['notes'] });
-    },
-  });
-
   const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query);
   }, []);
@@ -130,18 +98,6 @@ export default function NotesClient({ tag }: NotesClientProps) {
   const handlePageChange = useCallback((newPage: number) => {
     setPage(newPage);
   }, []);
-
-  const handleOpenModal = useCallback(() => {
-    setIsModalOpen(true);
-  }, []);
-
-  const handleCloseModal = useCallback(() => {
-    setIsModalOpen(false);
-  }, []);
-
-  const handleNoteSubmit = useCallback((noteData: CreateNoteData) => {
-    createNoteMutation.mutate(noteData);
-  }, [createNoteMutation]);
 
   if (isLoading) return <div className={css.loading}>Loading...</div>;
   if (error) return <div className={css.error}>Error loading notes</div>;
@@ -155,12 +111,12 @@ export default function NotesClient({ tag }: NotesClientProps) {
         <h1 className={css.title}>
           {tag ? `Notes: ${tag}` : 'All Notes'}
         </h1>
-        <button 
+        <Link 
+          href="/notes/action/create"
           className={css.createButton}
-          onClick={handleOpenModal}
         >
-          Create Note
-        </button>
+          Create note +
+        </Link>
       </div>
 
       <div className={css.controls}>
@@ -192,26 +148,6 @@ export default function NotesClient({ tag }: NotesClientProps) {
           />
         </div>
       )}
-
-      <Modal isOpen={isModalOpen}>
-        <div className={css.modalContent}>
-          <div className={css.modalHeader}>
-            <h2>Create New Note</h2>
-            <button 
-              className={css.closeButton}
-              onClick={handleCloseModal}
-            >
-              ×
-            </button>
-          </div>
-          <div className={css.modalBody}>
-            <NoteForm
-              onSubmit={handleNoteSubmit}
-              isLoading={createNoteMutation.isPending}
-            />
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 }

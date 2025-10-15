@@ -18,3 +18,10 @@ export interface UpdateNoteData {
   content?: string;
   tags?: string[];
 }
+
+// Для чернеток
+export interface DraftNote {
+  title: string;
+  content: string;
+  tag: string;
+}
