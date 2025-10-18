@@ -1,18 +1,20 @@
 ﻿import { Roboto } from 'next/font/google';
+import { Metadata } from 'next';
 import Providers from "./providers";
 import Header from "@/components/Header/Header";
 import "./globals.css";
 
 // Налаштування шрифту Roboto
 const roboto = Roboto({
-  weight: ['300', '400', '500', '700'], // Вибір потрібних ваг шрифту
-  subsets: ['latin', 'cyrillic'], // Підмножини символів
-  display: 'swap', // Стратегія завантаження
-  variable: '--font-roboto', // CSS змінна для використання
-  fallback: ['system-ui', 'arial'], // Резервні шрифти
+  weight: ['300', '400', '500', '700'],
+  subsets: ['latin', 'cyrillic'],
+  display: 'swap',
+  variable: '--font-roboto',
+  fallback: ['system-ui', 'arial'],
 });
 
-export const metadata = {
+// Явна типізація з Metadata з next
+export const metadata: Metadata = {
   title: {
     default: "NoteHub - Your Personal Notes App",
     template: "%s | NoteHub"
@@ -22,11 +24,11 @@ export const metadata = {
   authors: [{ name: "NoteHub Team" }],
   creator: "NoteHub",
   publisher: "NoteHub",
-  metadataBase: new URL('https://your-domain.com'), // Замініть на реальний домен
+  metadataBase: new URL('https://your-domain.com'),
   openGraph: {
     title: "NoteHub - Your Personal Notes App",
     description: "Capture, organize, and access your notes anytime, anywhere with NoteHub.",
-    url: "https://your-domain.com", // Замініть на реальний домен
+    url: "https://your-domain.com",
     siteName: "NoteHub",
     images: [
       {

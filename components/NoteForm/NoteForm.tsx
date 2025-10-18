@@ -1,19 +1,38 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
 import { useNoteStore } from '@/lib/store/noteStore';
-
-interface NoteFormProps {
-  formAction: (formData: FormData) => Promise<void>;
-}
+import { CreateNoteData } from '@/types/note';
 
 const availableTags = ['Todo', 'Work', 'Personal', 'Meeting', 'Shopping'];
 
-export default function NoteForm({ formAction }: NoteFormProps) {
+export default function NoteForm() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { draft, setDraft, clearDraft } = useNoteStore();
   const [isPending, setIsPending] = useState(false);
+
+  // Mutation для створення нотатки з TanStack Query
+  const createNoteMutation = useMutation({
+    mutationFn: async (noteData: CreateNoteData) => {
+      const response = await axios.post('/api/notes', noteData);
+      return response.data;
+    },
+    onSuccess: () => {
+      // Інвалідуємо запити нотаток для оновлення списку
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+      // Очищаємо чернетку
+      clearDraft();
+      // Повертаємося на попередню сторінку
+      router.back();
+    },
+    onError: (error) => {
+      console.error('Error creating note:', error);
+    },
+  });
 
   // Обробник зміни полів форми
   const handleInputChange = (field: keyof typeof draft, value: string) => {
@@ -27,10 +46,14 @@ export default function NoteForm({ formAction }: NoteFormProps) {
 
     try {
       const formData = new FormData(e.currentTarget);
-      await formAction(formData);
-      // Після успішного сабміту очищаємо чернетку
-      clearDraft();
-      router.back(); // Повертаємося на попередню сторінку
+      const noteData: CreateNoteData = {
+        title: formData.get('title') as string,
+        content: formData.get('content') as string,
+        tags: [formData.get('tag') as string],
+      };
+
+      // Викликаємо мутацію
+      await createNoteMutation.mutateAsync(noteData);
     } catch (error) {
       console.error('Error creating note:', error);
     } finally {
@@ -41,14 +64,14 @@ export default function NoteForm({ formAction }: NoteFormProps) {
   // Обробник скасування
   const handleCancel = () => {
     // Чернетка НЕ очищається при скасуванні
-    router.back(); // Повертаємося на попередню сторінку
+    router.back();
   };
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div>
         <label htmlFor="title" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-          Title
+          Title *
         </label>
         <input
           type="text"
@@ -63,7 +86,7 @@ export default function NoteForm({ formAction }: NoteFormProps) {
       
       <div>
         <label htmlFor="content" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-          Content
+          Content *
         </label>
         <textarea
           id="content"
@@ -77,7 +100,7 @@ export default function NoteForm({ formAction }: NoteFormProps) {
 
       <div>
         <label htmlFor="tag" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-          Tag
+          Tag *
         </label>
         <select
           id="tag"
@@ -85,6 +108,7 @@ export default function NoteForm({ formAction }: NoteFormProps) {
           value={draft.tag}
           onChange={(e) => handleInputChange('tag', e.target.value)}
           style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '4px', fontSize: '1rem' }}
+          required
         >
           {availableTags.map(tag => (
             <option key={tag} value={tag}>{tag}</option>
@@ -95,32 +119,34 @@ export default function NoteForm({ formAction }: NoteFormProps) {
       <div style={{ display: 'flex', gap: '1rem' }}>
         <button 
           type="submit" 
-          disabled={isPending}
+          disabled={isPending || createNoteMutation.isPending}
           style={{ 
             background: '#007acc', 
             color: 'white', 
             border: 'none', 
             padding: '0.75rem 1.5rem', 
             borderRadius: '4px',
-            cursor: isPending ? 'not-allowed' : 'pointer',
-            opacity: isPending ? 0.6 : 1,
+            cursor: (isPending || createNoteMutation.isPending) ? 'not-allowed' : 'pointer',
+            opacity: (isPending || createNoteMutation.isPending) ? 0.6 : 1,
             fontSize: '1rem',
             flex: 1
           }}
         >
-          {isPending ? 'Creating...' : 'Create Note'}
+          {(isPending || createNoteMutation.isPending) ? 'Creating...' : 'Create Note'}
         </button>
         
         <button 
           type="button"
           onClick={handleCancel}
+          disabled={isPending || createNoteMutation.isPending}
           style={{ 
             background: '#6c757d', 
             color: 'white', 
             border: 'none', 
             padding: '0.75rem 1.5rem', 
             borderRadius: '4px',
-            cursor: 'pointer',
+            cursor: (isPending || createNoteMutation.isPending) ? 'not-allowed' : 'pointer',
+            opacity: (isPending || createNoteMutation.isPending) ? 0.6 : 1,
             fontSize: '1rem',
             flex: 1
           }}
